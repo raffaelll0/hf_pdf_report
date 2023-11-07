@@ -18,6 +18,7 @@ headers_old = {
 }
 
 
+#QUESTE FUNZIONI SERVONO AD ESTRARRE I DATI NUMERICI DEI PREVENTIVI
 
 def extract_prev_acc_anno():
     """
@@ -59,7 +60,6 @@ def extract_prev_acc_anno():
     return number_of_ids
 
 
-
 def extract_prev_acc_mese():
     """
         Questa funzione estrae i dati da una board di monday.com,
@@ -89,6 +89,7 @@ def extract_prev_acc_mese():
         print("No data found in the response.")
 
     return num_items
+
 
 def extract_prev_evasi_mese():
     """
@@ -171,7 +172,6 @@ def extract_prev_acc_consuntivo():
     return num_items
 
 
-
 def extract_prev_acc_tot():
     """
             Questa funzione estrae i dati da una board di monday.com,
@@ -241,44 +241,5 @@ def extract_prev_acc_tot():
 extract_prev_acc_tot()
 
 
-def data_extractor_graphs_pag_2():
-    """
-    questa funzione prenderà i dati da monday.com, essi verranno
-    poi utilizzati per creare dei grafici tramite altair e la libreria pandas
-    i grafici di questa funzione si troveranno nella seconda pagina del pdf
-
-    Args:
-
-    Returns:
-
-    """
-
-
-
-def data_extractor_graphs_pag_3():
-    """
-    questa funzione prenderà i dati da monday.com, essi verranno
-    poi utilizzati per creare dei grafici tramite altair e la libreria pandas
-    i grafici di questa funzione si troveranno nella terza pagina del pdf
-
-    Args:
-
-    Returns:
-
-    """
-
-    #prendo dati da monday.com (probabilmente lista json)
-
-
-    #lo parso
-
-
-    #li definisco e li salvo
-
-
-    #creo dei grafici semplici all'inizio
-
-
-    #una volta capito il meccanismo creo i grafici finali
 
 
