@@ -26,7 +26,7 @@ def generate_pdf():
 
     # Create a SimpleDocTemplate object
     doc = SimpleDocTemplate("kpi_report.pdf", pagesize=letter)
-
+    print("prova")
 
     # Create a list to hold the PDF content
     story = []
