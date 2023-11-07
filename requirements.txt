@@ -1,4 +1,0 @@
-fastapi==0.95.2
-uvicorn==0.22.0
-myapi==0.0.1
-gunicorn==20.1.0
