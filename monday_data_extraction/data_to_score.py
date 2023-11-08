@@ -1,26 +1,30 @@
 import requests
+import monday
+import pandas
 
-
-apiKey = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjE0NTc5NTQ4MywiYWFpIjoxMSwidWlkIjoyNzk4NzQzMywiaWFkIjoiMjAyMi0wMi0xNFQwODoyOTo0NC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTExOTUwMTIsInJnbiI6InVzZTEifQ.j052k96lwfIBOtLGWng2xmZul4c_rWnguMOTduJ95DM"
-apiUrl = "https://api.monday.com/v2"
-
-#CI SONO DUE HEADERS POICHE' headers SPECIFICA L'ULTIMA VERSIONE, CHE SERVE PER DETERMINATE QUERY'
-#QUESTO PROBLEMA VA RISOLTO INFATTI ANCHE LA FUNZIONE extract_prev_acc_anno() DEVE UTILIZZARE headers e non headers_old
-headers = {
-    'Content-Type': 'application/json',
-    'Authorization': apiKey,
-    'API-Version': '2023-10'
-
-}
-headers_old = {
-    'Authorization': apiKey
-
-}
+apiKey = monday.apiKey
+apiUrl = monday.apiUrl
+headers = monday.headers
 
 
 #QUESTE FUNZIONI SERVONO AD ESTRARRE I DATI NUMERICI DEI PREVENTIVI
 
-def extract_prev_acc_anno():
+def n_tot_prev_accettati_anno():
+
+    #query
+
+    # data = monday.get_items(board...)
+    #
+    # #calcolo conteggio
+    #
+    # score = len(data)
+    #
+    # return (score)
+
+
+
+
+
     """
     Questa funzione estrae i dati da una board di monday.com,
     i dati estrapolati nello specifico sono i numero di preventivi accettati in un anno,
@@ -39,28 +43,30 @@ def extract_prev_acc_anno():
         number_of_ids
     """
     # CODICE DELLA BOARD
-    id_board_commessa = '2286362496'
+    id_board_preventivi = '2286362496'
 
-    query = ''' { boards(ids: 2286362496) { groups(ids: "topics") { items (limit: 20000) { id } } } } '''
+    query = 'query { boards (ids: ' + id_board_preventivi + ') {groups(ids:  ["nuovo_gruppo10114" "nuovo_gruppo89357"] ){ items_page (limit:500) { items { id name column_values(ids: "anno") { text value } } } } } }'
     data = {'query': query}
 
     # FACCIAMO UNA RICHIESTA JSON
-    r = requests.post(url=apiUrl, json=data, headers=headers_old)
+    r = requests.post(url=apiUrl, json=data, headers=headers)
 
     # DEFINIAMO IL NOSTRO JSON CON LA VARIABILE response_data
     response_data = r.json()
 
-    #INDICA IL NUMERO DI ID NEL GRUPPO
-    id_list = [item['id'] for item in response_data['data']['boards'][0]['groups'][0]['items']]
+    total_items = 0
 
-    # Count the number of 'id' entries
-    number_of_ids = len(id_list)
+    # Iterate through the "groups" list and count the items that have "anno" equal to "2023"
+    for group in response_data['data']['boards'][0]['groups']:
+        for item in group['items_page']['items']:
+            for column_value in item['column_values']:
+                if column_value['text'] == '2023':
+                    total_items += 1
 
 
-    return number_of_ids
+    return total_items
 
-
-def extract_prev_acc_mese():
+def n_tot_prev_accettati_mese():
     """
         Questa funzione estrae i dati da una board di monday.com,
         i dati estrapolati nello specifico sono i numero di preventivi accettati in un mese,
@@ -91,7 +97,7 @@ def extract_prev_acc_mese():
     return num_items
 
 
-def extract_prev_evasi_mese():
+def n_tot_prev_evasi_mese():
     """
             Questa funzione estrae i dati da una board di monday.com,
             i dati estrapolati nello specifico sono i numero di preventivi evasi in un mese,
@@ -129,7 +135,7 @@ def extract_prev_evasi_mese():
     return num_items
 
 
-def extract_prev_acc_consuntivo():
+def n_tot_prev_acc_consuntivo():
     """
             Questa funzione estrae i dati da una board di monday.com,
             i dati estrapolati nello specifico sono i numero di preventivi accettati in consuntivo,
@@ -155,7 +161,7 @@ def extract_prev_acc_consuntivo():
                 num_items
             """
 
-    query = '{ boards(ids: 2286362496) { groups(ids: "nuovo_gruppo89357"){ items_page( query_params: {rules: [{column_id: "data", compare_value: ["2023-11-01", "2023-11-30"], operator: between}]} ) { items { id name } } } } }'
+    query = '{ boards(ids: 2286362496) { groups(ids: "nuovo_gruppo89357"){ items_page( query_params: {rules: [{column_id: "data", compare_value: ["2023-04-01", "2023-04-30"], operator: between}]} ) { items { id name } } } } }'
 
     data = {'query': query}
     r = requests.post(url=apiUrl, json=data, headers=headers)
@@ -172,74 +178,66 @@ def extract_prev_acc_consuntivo():
     return num_items
 
 
-def extract_prev_acc_tot():
+
+def importo_tot_prev_evasi():
     """
-            Questa funzione estrae i dati da una board di monday.com,
-            i dati estrapolati nello specifico sono il numero tot di preventivi accettati in un anno,
-            viengono fatti due controlli tramite query, dove vengono definite due date (inizio anno-fine anno)
-            stavolta però i dati che ci servono sono filtrati in base ad un altro tipo di colonna e anche in
-            un altro gruppo
-            ovvero per la prima query: column_id:"data"
-                                        groups(ids: "nuovo_gruppo10114")
 
-            ovvero per la seconda query: column_id:"data"
-                                         groups(ids: "nuovo_gruppo89357")
-
-
-            una volta fatto ciò viene fatto un controllo per vedere quanti items sono presenti in entrambe le query,
-            essi verranno addizionati tra di loro e salvati un una variabile
-
-
-            una volta estrapolati i dati essi verranno usati nel file pdf_gen
-            i dati più complicati (per grafici) verranno estrapolati da un'altra funzione
-
-            !IL CODICE DI QUESTA FUNZIONE E' DA REVISIONARE POICHE'
-            !I DATI RISULTANO MAGGIORI DI QUANTO DOVREBBERO ESSERE
-
-            Args:
-                data: parsed json of the data that the webhook gives
-                challenge: is in a dictionary and contains a value(int)
-
-            Returns:
-                tot
-            """
-
-    query = '{ boards(ids: 2286362496) { groups(ids: "nuovo_gruppo10114" ) { items_page(limit:500 query_params: {rules: [{column_id: "data", compare_value: ["2023-01-01", "2023-11-06"], operator: between}]} ) { items { id  } } } } }'
-
+    :return:
+    """
+    query = '{ boards(ids: 2286362496) { groups(ids: "topics" ) { items_page(limit:500 query_params: {rules: [{column_id: "dup__of_data_offerta_contabilt_", compare_value: ["2023-11-01", "2023-11-30"], operator: between}]} ) { items { id name column_values(ids: "_importo_offerta_") { text value } } } } } }'
     data = {'query': query}
+
+    # FACCIAMO UNA RICHIESTA JSON
     r = requests.post(url=apiUrl, json=data, headers=headers)
-    response = r.json()
 
-    # INDICA IL NUMERO DI ID NEL GRUPPO
-    id_list = [item['id'] for item in response['data']['boards'][0]['groups'][0]['items_page']['items']]
+    # DEFINIAMO IL NOSTRO JSON CON LA VARIABILE response_data
+    response_data = r.json()
+    tot = 0
 
-    # Count the number of 'id' entries
-    number_of_ids = len(id_list)
-    print(number_of_ids)
-#####################################################################
-    #QUERY PER LA SCHEDA A CONSUNTIVO
-
-    query_consuntivo = '{ boards(ids: 2286362496) { groups(ids: "nuovo_gruppo89357" ) { items_page(limit:500 query_params: {rules: [{column_id: "data", compare_value: ["2023-01-01", "2023-11-06"], operator: between}]} ) { items { id  } } } } }'
-
-    data_consuntivo = {'query': query_consuntivo}
-    r_consuntivo = requests.post(url=apiUrl, json=data_consuntivo, headers=headers)
-    response_consuntivo = r_consuntivo.json()
-
-    # INDICA IL NUMERO DI ID NEL GRUPPO
-    id_list_consuntivo = [item['id'] for item in response_consuntivo['data']['boards'][0]['groups'][0]['items_page']['items']]
-
-    # Count the number of 'id' entries
-    number_of_ids_consuntivo = len(id_list_consuntivo)
-    print(number_of_ids_consuntivo)
-
-
-    tot = number_of_ids + number_of_ids_consuntivo
-    print(tot)
-
-
+    # Iterate through the "groups" list and count the items that have "anno" equal to "2023"
+    for group in response_data['data']['boards'][0]['groups']:
+        for item in group['items_page']['items']:
+            for column_value in item['column_values']:
+                if column_value['value']:
+                    val = column_value['value'].replace('"', '')
+                    tot = tot + int(val)
     return tot
-extract_prev_acc_tot()
 
 
 
+def importo_tot_prev_accettati():
+    """
 
+    :return:
+    """
+    query = '{ boards(ids: 2286362496) { groups(ids: ["nuovo_gruppo10114" "nuovo_gruppo89357"]) { items_page( limit: 500 ) { items { id name column_values(ids: ["_importo_offerta_" "anno"]) { text value id} } } } } }'
+    data = {'query': query}
+    # FACCIAMO UNA RICHIESTA JSON
+    r = requests.post(url=apiUrl, json=data, headers=headers)
+
+    total_items = 0
+    tot = 0
+
+    # DEFINIAMO IL NOSTRO JSON CON LA VARIABILE response_data
+    response_data = r.json()
+
+    for group in response_data['data']['boards'][0]['groups']:
+        for item in group['items_page']['items']:
+            for column_value in item['column_values']:
+                if column_value['text'] == '2023':
+                    #print(column_value['value'])
+                    total_items += 1
+
+                    if column_value["id"] == "_importo_offerta_":
+                        if column_value['value']:
+                            val = column_value['value'].replace('"', '')
+                            print(val)
+                            tot = tot + float(val)
+
+
+    print("tot items: ", total_items)
+    print("tot: ", tot)
+
+#Da sistemare
+
+#importo_tot_prev_accettati()

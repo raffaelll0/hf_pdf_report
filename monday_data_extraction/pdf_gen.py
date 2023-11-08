@@ -5,10 +5,10 @@ from reportlab.lib.pagesizes import letter
 
 
 
-from monday_data_extraction.extract_data_script import *
+from monday_data_extraction.data_to_score import *
 
 # Create a function to generate the PDF
-def generate_pdf():
+def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_prev_evasi, prev_acc_anno):
     """
     Questa funzione crea un pdf basato da griglie rettangolari con
     all' interno i dati estrapolati da varie funzioni presenti nel file extract_data_script
@@ -21,68 +21,66 @@ def generate_pdf():
     Returns:
         pdf file
     """
+########################################################################################################################
+#PRIMA PAGINA DEL PDF
 
-    #PRIMA PAGINA
-
-    # Create a SimpleDocTemplate object
-    doc = SimpleDocTemplate("kpi_report.pdf", pagesize=letter)
+    # CREO UN OGGETTO SimpleDocTemplate
+    doc = SimpleDocTemplate("../kpi_report.pdf", pagesize=letter)
 
 
-    # Create a list to hold the PDF content
+    # CREO UNA LISTA PER SALVARE INFORMAZIONI
     story = []
 
-    # Define the title and add it to the story
+    # DEFINISCO IL TITOLO AD INIZIO PDF
     title = "REPORT KPI MESE 2023"
     title_style = getSampleStyleSheet()["Title"]
     title_paragraph = Paragraph(title, title_style)
     story.append(title_paragraph)
 
-    # Add some space below the title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
-    # Author and Date Information
+    # AGGIUNGO I DATI DELL'AUTORE E GLI AGGIORNAMENTI
     author_info = "Autore del report: Christian Trocino<br/>Dati aggiornati al XX/XX/XXXX"
     author_style = getSampleStyleSheet()["Normal"]
     author_paragraph = Paragraph(author_info, author_style)
     story.append(author_paragraph)
 
-    # Add some space below the author information
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
 
-########################################################################################################################
+########################################################
 
 
-    # Add the title "PERIODO DI RIFERIMENTO MESE 2023" in the center
+    # AGGIUNGO IL TITOLO "PERIODO DI RIFERIMENTO MESE 2023" AL CENTRO
     period_title = "PERIODO DI RIFERIMENTO MESE 2023"
     period_title_style = getSampleStyleSheet()["Title"]
     period_title_paragraph = Paragraph(period_title, period_title_style)
     story.append(period_title_paragraph)
 
-    # Add some space below the title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
 
-    # Create descriptions for each box
+    # CREO UNA DESCRIZIONE PER OGNI BOX
     description1 = "N tot prev.Evasi"
     description2 = "N tot prev.Accettati"
     description3 = "N tot prev.acc.consuntivo"
     description4 = "Importo tot prev.Evasi"
 
-    prev_evasi_mes = extract_prev_evasi_mese()
-    prev_acc_mes = extract_prev_acc_mese()
-    prev_acc_consuntivo = extract_prev_acc_consuntivo()
 
-    # Create a table with four squares containing descriptions and values
+
+    # CREO UNA TABELLA CON 4 QUADRATI CHE CONTENGONO DATI
     data = [
         [description1, description2, description3, description4],
-        [str(prev_evasi_mes), str(prev_acc_mes), str(prev_acc_consuntivo), "4"]
+        [str(prev_evasi_mes), str(prev_acc_mes), str(prev_acc_consuntivo), str(importo_tot_prev_evasi)]
     ]
 
     table_data = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data]
     table = Table(table_data, colWidths=100, rowHeights=50)  # Decreased row heights
 
-    # Apply table styles for a white background with black outer lines
+    # APPLICO LO STILE DELLE TABELLE PER UNO SFONDO BIANCO E LINEE NERE
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.white),
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
@@ -94,29 +92,27 @@ def generate_pdf():
 
     story.append(table)
 
-    # Add some space on top of the descriptions
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
 
-########################################################################################################################
+###################################################
 
 
-    # Add the title "PERIODO DI RIFERIMENTO MESE 2023" in the center
+    # AGGIUNGO IL TITOLO "PERIODO DI RIFERIMENTO ANNO 2023" AL CENTRO
     year_title = "PERIODO DI RIFERIMENTO: ANNO 2023"
     year_title_style = getSampleStyleSheet()["Title"]
     year_title_paragraph = Paragraph(year_title, year_title_style)
     story.append(year_title_paragraph)
 
-    # Add some space below the title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
-    # PRENDI I VALORI FETCHATI DA MONDAY NELLO SCRIPT
-    number_of_ids = extract_prev_acc_anno()
 
-    # Create a table with two boxes containing values "1" on the left and "2" on the right
+    # CREO UNA TABELLA CON 2 BOX CONTENTI I VALORI 1 ALLA SINISTRA E 2 ALLA DESTRA (PER ADESSO)
     data2 = [
         ["N. Tot.Prev.Accettati", "Importo Tot.Prev.Accettati"],
-        [str(number_of_ids), "2"]
+        [str(prev_acc_anno), "2"]
     ]
 
     table_data2 = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data2]
@@ -134,20 +130,20 @@ def generate_pdf():
 
     story.append(table2)
 
-    # Add some space below the titles
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
 
-########################################################################################################################
+################################################
 
 
-    # Add the descriptions "FATTURATO AD OGGI," "FATTURATO DA EMETTERE," and "FATTURATO PREVISTO 2023"
-    # under all the existing boxes
+    # AGGIUNGO LA DESCRIZIONE "FATTURATO AD OGGI," "FATTURATO DA EMETTERE," E "FATTURATO PREVISTO 2023"
+    # SOTTO LE BOX ESISTENTI
     description_left = "FATTURATO AD OGGI"
     description_center = "FATTURATO DA EMETTERE"
     description_right = "FATTURATO PREVISTO 2023"
 
-    # Create a table with three boxes containing descriptions and values
+    # CCREO UNA TABELLA CON TRE BOX CONTENENTI VALORI E DESCRIZIONI
     data3 = [
         [description_left, description_center, description_right],
         ["1", "2", "3"]
@@ -169,27 +165,27 @@ def generate_pdf():
 
 
 ########################################################################################################################
+#SECONDA PAGINA DEL PDF
 
-
-    # Add a page break to start a new page
+    # AGGIUNGO UN PAGE BREAK PER INIZIARE UNA NUOVA PAGINA
     story.append(PageBreak())
 
-    # Create a title for the second page
+    # CREO UN TITOLO PER LA NUOVA PAGINA
     second_page_title = "ANALISI OPERATIVA PROGETTI"
     second_page_title_style = getSampleStyleSheet()["Title"]
     second_page_title_paragraph = Paragraph(second_page_title, second_page_title_style)
     story.append(second_page_title_paragraph)
 
-    # Add some space below the second page title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
-    # Create a table with a single cell containing the number "4"
+    # CREO UNA TABELLA CON UNA SINGOLA CELLA CONTENTENTE IL VALORE "4"
     data4 = [
         ["4"]
     ]
 
     table_data4 = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data4]
-    table4 = Table(table_data4, colWidths=500, rowHeights=100)  # Adjust colWidths and rowHeights as needed
+    table4 = Table(table_data4, colWidths=500, rowHeights=100)  # AGGIUSTA colWidths E rowHeights IN BASE ALLE NECESSITA'
 
     table4.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.white),
@@ -202,10 +198,10 @@ def generate_pdf():
 
     story.append(table4)
 
-    # Add some space below the second page title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
-    # Add two more tables with data "5" and "6"
+    # AGGIUNGO 2 TABELLE CON I VALORI "5" E "6"
     data5 = [
         ["5"]
     ]
@@ -224,7 +220,7 @@ def generate_pdf():
 
     story.append(table5)
 
-    # Add some space below the second page title
+    # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
     data6 = [
@@ -247,7 +243,7 @@ def generate_pdf():
 
 
 ########################################################################################################################
-    #SECONDA PAGINA
+#TERZA PAGINA DEL PDF
 
 
     # Add a page break to start a new page
@@ -287,7 +283,7 @@ def generate_pdf():
 
 
 ########################################################################################################################
-    #TERZA PAGINA
+#QUARTA PAGINA DEL PDF
 
 
     # Add a page break to start a new page
