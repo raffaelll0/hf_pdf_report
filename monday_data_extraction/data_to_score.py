@@ -1,81 +1,16 @@
 import requests
 import monday
 import pandas as pd
-import json
+from monday import first_and_last_day_of_year, get_first_and_last_day_of_current_month
 
 apiKey = monday.apiKey
 apiUrl = monday.apiUrl
 headers = monday.headers
 
+get_items = monday.get_items
+#first_and_last_day_of_year = monday.first_and_last_day_of_year()
+
 #QUESTE FUNZIONI SERVONO AD ESTRARRE I DATI NUMERICI DEI PREVENTIVI
-def get_items(board_ids: list, column_values_ids: list, group_ids: list = None, limit: int = 500,
-              query_params_str: str = None, cursor: str = None):
-    all_items = []
-
-    if group_ids is None:
-        group_ids_str = ""
-        group_ids_closing = ""
-    else:
-        my_group_ids_str = "$my_group_ids: [String!]"
-        group_ids_str = "{groups(ids:$my_group_ids)"
-        group_ids_closing = "}"
-
-    if query_params_str is None:
-        query_params_str = ""
-    else:
-        query_params_str = f", query_params: {query_params_str}"
-
-    while True:
-        if cursor is None:
-            cursor_str = ""
-        else:
-            cursor_str = f', cursor: "{cursor}"'
-            # print(cursor_str)
-            query_params_str = ""
-
-        # Define the initial query to fetch the first set of data
-        query = 'query ($my_board_id: [ID!]!, $my_colummn_values_ids: [String!], $my_limit: Int!' + my_group_ids_str + ') { boards(ids:$my_board_id)' + group_ids_str + ' { items_page(limit:$my_limit' + query_params_str + cursor_str + ') { cursor items { id name column_values(ids:$my_colummn_values_ids){id text value ... on MirrorValue { display_value }} } } }}' + group_ids_closing
-        # print(query)
-        vars = {
-            'my_limit': limit,
-            'my_board_id': board_ids,
-            'my_query_params': query_params_str,
-            'my_colummn_values_ids': column_values_ids,
-            'my_group_ids': group_ids
-        }
-
-        data = {'query': query, 'variables': vars}
-
-        # Make a request to the GraphQL endpoint
-        r = requests.post(url=apiUrl, json=data, headers=headers)
-        response_data = r.json()
-        print(response_data)
-
-        if group_ids is None:
-            items = response_data['data']['boards'][0]['items_page']['items']
-            cursor = response_data['data']['boards'][0]['items_page']['cursor']
-        else:
-            cursor = response_data['data']['boards'][0]['groups'][0]['items_page']['cursor']
-
-            for n, id in enumerate(group_ids):
-                items = response_data['data']['boards'][0]['groups'][n]['items_page']['items']
-                all_items.extend(items)
-
-        # Append items to the accumulated list
-        all_items.extend(items)
-
-        if limit != 500:
-            break
-
-        if cursor is None:
-            break
-
-    return (all_items)
-
-
-
-
-
 
 
 def n_tot_prev_accettati_anno():
@@ -190,47 +125,30 @@ def n_tot_prev_evasi_mese():
     return num_items
 
 
-def n_tot_prev_acc_consuntivo():
-    """
-            Questa funzione estrae i dati da una board di monday.com,
-            i dati estrapolati nello specifico sono i numero di preventivi accettati in consuntivo,
-            viene fatto un controllo tramite query, dove vengono definite due date (inizio mese-fine mese)
-            stavolta però i dati che ci servono sono filtrati in base ad un altro tipo di colonna e anche in
-            un altro gruppo
-            ovvero: column_id:"dup__of_data_offerta_contabilt_"
-                    groups(ids: "nuovo_gruppo89357")
+def prev_acc_consuntivo():
+    first_day, last_day = get_first_and_last_day_of_current_month()
 
+    # make the query
+    items = get_items(board_ids=[2286362496],
+                      query_params_str='{rules: [{column_id: "data", compare_value: ["' + first_day + '", "' + last_day + '"], operator: between}]}',
+                      column_values_ids=["anno"],
+                      group_ids=["nuovo_gruppo89357"],
+                      # limit=5
+                      )
 
-            una volta fatto ciò viene fatto un controllo per vedere quanti items sono presenti, quindi poi
-            questo dato verrà salvato
+    data_list = []
+    for item in items:
+        id = item['id']
+        anno = item['column_values'][0]['text']
 
+        data_list.append({'id': id, 'anno': anno})
 
-            una volta estrapolati i dati essi verranno usati nel file pdf_gen
-            i dati più complicati (per grafici) verranno estrapolati da un'altra funzione
+    df = pd.DataFrame(data_list)
+    df = df.drop_duplicates().reset_index(drop=True)
 
-            Args:
-                data: parsed json of the data that the webhook gives
-                challenge: is in a dictionary and contains a value(int)
+    count = len(df)
 
-            Returns:
-                num_items
-            """
-
-    query = '{ boards(ids: 2286362496) { groups(ids: "nuovo_gruppo89357"){ items_page( query_params: {rules: [{column_id: "data", compare_value: ["2023-04-01", "2023-04-30"], operator: between}]} ) { items { id name } } } } }'
-
-    data = {'query': query}
-    r = requests.post(url=apiUrl, json=data, headers=headers)
-    response = r.json()
-
-    if 'data' in response and 'boards' in response['data'] and 'groups' in response:
-        items = response['data']['boards'][0]['groups']['items_page']['items']
-        num_items = len(items)
-    else:
-        num_items = 0
-
-
-
-    return num_items
+    return count
 
 
 
@@ -288,18 +206,19 @@ def importo_tot_prev_accettati():
 
     return rounded_total_sum
 
-#BISOGNA AGGIUNGERE LA SOMMA DELLA COLONNA DATA EMISSIONE
 def fatturato_prev_2023():
+
+    first_day, last_day = first_and_last_day_of_year()
     total_sum = 0  # Initialize a variable to store the total sum
 
     # make the queries
     date4_items = get_items(board_ids=[2430432761],
-                            query_params_str='{rules: [{column_id: "date4", compare_value: ["2023-01-01", "2023-12-31"], operator: between}]}',
+                            query_params_str='{rules: [{column_id: "date4", compare_value: ["' + first_day + '", "' + last_day + '"], operator: between}]}',
                             column_values_ids=["numeri"]
                             )
 
     dup__of_data_prevista_items = get_items(board_ids=[2430432761],
-                                            query_params_str='{rules: [{column_id: "dup__of_data_prevista", compare_value: ["2023-01-01", "2023-12-31"], operator: between}]}',
+                                            query_params_str='{rules: [{column_id: "dup__of_data_prevista", compare_value: ["' + first_day + '", "' + last_day + '"], operator: between}]}',
                                             column_values_ids=["numeri"]
                                             )
 
@@ -310,61 +229,61 @@ def fatturato_prev_2023():
     for item in merged_json:
         numeri_value = item['column_values'][0].get('value')  # Assuming 'value' is the key for the numeri field
         try:
-            numeri_value = numeri_value.strip('"')  # Remove double quotes
-            total_sum += float(numeri_value)
+            if numeri_value:
+                numeri_value = numeri_value.strip('"')  # Remove double quotes
+                total_sum += float(numeri_value)
         except (ValueError, TypeError):
             print("Warning: Could not convert '{0}' to float. Skipping this value.".format(numeri_value))
 
     rounded_total_sum = round(total_sum, 2)
-    print("Total Sum until cursor is None:", rounded_total_sum)
+    #print("Total Sum until cursor is None:", rounded_total_sum)
+
+
 
     return rounded_total_sum
 
 
-fatturato_prev_2023()
 
 
 
 #ANCHE QUI BISOGNA AGGIUNGERE LA SOMMA DELLA COLONNA DATA EMISSIONE
 def fatturato_ad_oggi():
-    query = ' { boards(ids: 2430432761) { groups(ids: "group_title") { id items_page( limit: 500 query_params: {rules: [{column_id: "date4", compare_value: ["2023-01-01", "2023-12-31"], operator: between}]} ) { cursor items { id name column_values(ids: "numeri") { value text } } } } } }'
-    total_sum = 0
-    processed_items = set()
+    total_sum = 0  # Initialize a variable to store the total sum
 
-    while True:
-        response = requests.post(url=apiUrl, headers=headers, json={'query': query})
-        data = response.json()
+    first_day, last_day = first_and_last_day_of_year()
 
-        for group in data['data']['boards'][0]['groups']:
-            for item in group['items_page']['items']:
-                item_id = item['id']
-                if item_id not in processed_items:
-                    text_value = item['column_values'][0]['text']
-                    if text_value is not None:
-                        value = float(text_value)
-                        total_sum += value
-                        processed_items.add(item_id)
+    # make the queries
+    date4_items = get_items(board_ids=[2430432761],
+                            query_params_str='{rules: [{column_id: "date4", compare_value: ["' + first_day + '", "' + last_day + '"], operator: between}]}',
+                            column_values_ids=["numeri"],
+                            group_ids=["group_title"]
 
-        cursor = data['data']['boards'][0]['groups'][-1]['items_page']['cursor']
-        if cursor is None:
-            break
+                            )
 
-        query = query.replace(f'"{cursor}"', 'null')
+    dup__of_data_prevista_items = get_items(board_ids=[2430432761],
+                                            query_params_str='{rules: [{column_id: "dup__of_data_prevista", compare_value: ["' + first_day + '", "' + last_day + '"], operator: between}]}',
+                                            column_values_ids=["numeri"],
+                                            group_ids=["group_title"]
+                                            )
 
+    # Merge the two lists based on 'id'
+    merged_json = {item['id']: item for item in date4_items + dup__of_data_prevista_items}.values()
 
+    # calculate the total sum
+    for item in merged_json:
+        numeri_value = item['column_values'][0].get('value')  # Assuming 'value' is the key for the numeri field
+        try:
+            if numeri_value:
+                numeri_value = numeri_value.strip('"')  # Remove double quotes
+                total_sum += float(numeri_value)
+        except (ValueError, TypeError):
+            print("Warning: Could not convert '{0}' to float. Skipping this value.".format(numeri_value))
 
     rounded_total_sum = round(total_sum, 2)
-    print('Total Sum:', rounded_total_sum)
-
-
-
-
-
-
+    print(rounded_total_sum)
     return rounded_total_sum
 
 
-fatturato_ad_oggi()
 
 
 #funzionante, vanno settati i gruppi come variabili globali
