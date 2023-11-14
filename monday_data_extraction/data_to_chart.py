@@ -1,7 +1,7 @@
 import requests
 import monday
 import altair as alt
-import pandas
+import pandas as pd
 
 
 apiKey = monday.apiKey
@@ -9,28 +9,9 @@ apiUrl = monday.apiUrl
 headers = monday.headers
 
 #QUESTE FUNZIONI SI BASANO DI ESTRARRE DATI DA MONDAY E DI CREARE 1 AD 1 I SINGOLI GRAFICI
-# PER POI UTILIZZARLI NEL PDF GEN
+# PER POI INSERIRLI NEL PDF GEN
 
-def m_progetti_in_progress_su_pm(item_data):
-
-
-    #elaboro i dati in modo da ottenere una tabella utile per altair
-    #suddivisi per pm, in pila per Business Unit
-    # df = item_data.groupby(params...)
-    # """
-    # pm|BU|n_progetti
-    # Raffaele Tardi|ConsImp|6
-    # Raffaele Tardi|ConsIMM|4
-    # """
-    #
-    # #genero grafico a barre impilate su altair
-    # piled_bar_chart = alt.Chart(data=df,....)
-    #
-    #
-    # return(piled_bar_chart)
-
-
-
+def n_progetti_in_progress_su_pm():
 
     """
     questa funzione prenderà i dati da monday.com, essi verranno
@@ -42,31 +23,66 @@ def m_progetti_in_progress_su_pm(item_data):
     Returns:
 
     """
+    query = 'query getItems{ boards (ids:[2286362570]) { items_page(limit:500 ){ cursor items{ id name column_values (ids:["person" "specchio_1"] ) { id text ... on MirrorValue { display_value } } } } } }'
+    data = {'query': query}
 
-    # data = item_data[0][colonna]
-    #
-    # grafico = data.qualche_funzione
-    #
-    # return(grafico)
+    # FACCIAMO UNA RICHIESTA JSON
+    r = requests.post(url=apiUrl, json=data, headers=headers)
 
-    #3 HF-progetti
+    # DEFINIAMO IL NOSTRO JSON CON LA VARIABILE response_data
+    response_data = r.json()
 
-    #QUESTO SARA' UN GRAFICO A BARRE VERTICALI
-    #definisco il tipo di grafico
+    #print(response_data)
 
-    #DEFINISCO L'ASSE X CON I GLI UTENTI DELLA BOARD HF PROGETTI E DEFINISCO LA TIPOLOGIA DEL PROGETTO
-    #faccio una query della board e filtro gli utenti e il tipo del progetto
+    data = response_data['data']['boards'][0]['items_page']['items']
 
-    #dict1 = {'a': 1, 'b': 2, 'c': 3}
-    #dict2 = {'b': 3, 'c': 4, 'd': 5}
-    #dict3 = {'a': 1, 'b': 5, 'c': 7, 'd': 5}
-    #questo controllo si basa su due dizionari ma siccome noi abbiamo un solo json dobbiamo fare il controllo all'interno
+    # Create a list of dictionaries to store the data
+    data_list = []
+
+    # Loop through the data and count occurrences of 'person' and 'specchio_1'
+    for item in data:
+        person = item['column_values'][1]['text']
+        specchio_1 = item['column_values'][0]['display_value']
+        data_list.append({'person': person, 'specchio_1': specchio_1})
+
+    # Create a DataFrame from the list of dictionaries
+    df = pd.DataFrame(data_list)
+
+
+
+    df = df.assign(specchio_1=df['specchio_1'].str.split(', ')).explode('specchio_1')
+    # Remove leading/trailing whitespace and remove duplicates
+    df['specchio_1'] = df['specchio_1'].str.strip()
+    df = df.drop_duplicates().reset_index(drop=True)
+
+    df = df.assign(person=df['person'].str.split(', ')).explode('person')
+    # Remove leading/trailing whitespace and remove duplicates
+    df['person'] = df['person'].str.strip()
+    df = df.drop_duplicates().reset_index(drop=True)
+
+    # Group by 'person' and 'specchio_1' and count occurrences
+    result_df = df.groupby(['person', 'specchio_1']).size().reset_index(name='count')
+
+    #display(result_df)
+
+    # Create an Altair chart
+    chart = alt.Chart(result_df).mark_bar().encode(
+        x=alt.X('person', title='PM/SO'),
+        y=alt.Y('count:Q', title='Conteggio'),
+        color=alt.Color('specchio_1:N', title='BU')
+
+    ).properties(
+    width=400,  # Set your custom width
+    height=250  # Set your custom height
+    )
+
+    chart_path = r'C:\Users\raffaele.loglisci\Desktop\altair_demo\monday_data_extraction\pngs_of_charts\chart.png'
+    chart.save(chart_path)
+    return chart_path
 
 
 
 
-    #DOBBIAMO QUINDI CERCARE LA PERCENTUALE SU CUI UN UTENTE HA LAVORATO SU UN PROGETTO
-    #NELL'ASSE Y INSERISCO IL NUMERO DI CONTEGGI, OVVERO IL NUMERO DI VOLTE IN CUI UN UTENTE HA LAVORATO SU UN PROGETTO
 
 def data_extractor_graph_2():
     """
@@ -217,9 +233,6 @@ def data_extractor_graph_8():
     #bisogna filtrare le ore rendicontate in base al mese, quindi va fatto un controllo nella query
     #una volta fatto ciò bisogna capire come selezionare le ore rendicontate in base alal tipologia
     #quindi le ore e gli utenti devono essere raggruppati in base ad una tipologia di progetto monday
-
-
-
 
 
 def data_extractor_graph_9():

@@ -1,14 +1,25 @@
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import letter
 
 
 
+
 from monday_data_extraction.data_to_score import *
+from monday_data_extraction.data_to_chart import *
 
 # Create a function to generate the PDF
-def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_prev_evasi, prev_acc_anno):
+def generate_pdf(prev_evasi_mes,
+                 prev_acc_mes,
+                 prev_acc_consuntivo,
+                 importo_tot_prev_evasi,
+                 prev_acc_anno,
+                 importo_tot_prev_accettati,
+                 fatturato_prev_2023,
+                 fatturato_ad_oggi,
+                 fatturato_da_emettere,
+                 chart_progetti_in_progress_su_pm):
     """
     Questa funzione crea un pdf basato da griglie rettangolari con
     all' interno i dati estrapolati da varie funzioni presenti nel file extract_data_script
@@ -21,12 +32,13 @@ def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_
     Returns:
         pdf file
     """
+
+
 ########################################################################################################################
 #PRIMA PAGINA DEL PDF
 
     # CREO UN OGGETTO SimpleDocTemplate
-    doc = SimpleDocTemplate("../kpi_report.pdf", pagesize=letter)
-
+    doc = SimpleDocTemplate(r"C:\Users\raffaele.loglisci\Desktop\altair_demo\kpi_report.pdf", pagesize=letter)
 
     # CREO UNA LISTA PER SALVARE INFORMAZIONI
     story = []
@@ -111,8 +123,8 @@ def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_
 
     # CREO UNA TABELLA CON 2 BOX CONTENTI I VALORI 1 ALLA SINISTRA E 2 ALLA DESTRA (PER ADESSO)
     data2 = [
-        ["N. Tot.Prev.Accettati", "Importo Tot.Prev.Accettati"],
-        [str(prev_acc_anno), "2"]
+        ["N. Tot.Prev.Accettati nell'anno", "Importo Tot.Prev.Accettati"],
+        [str(prev_acc_anno), str(importo_tot_prev_accettati)]
     ]
 
     table_data2 = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data2]
@@ -146,7 +158,7 @@ def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_
     # CCREO UNA TABELLA CON TRE BOX CONTENENTI VALORI E DESCRIZIONI
     data3 = [
         [description_left, description_center, description_right],
-        ["1", "2", "3"]
+        [str(fatturato_ad_oggi), str(fatturato_da_emettere), str(fatturato_prev_2023)]
     ]
 
     table_data3 = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data3]
@@ -179,24 +191,11 @@ def generate_pdf(prev_evasi_mes, prev_acc_mes, prev_acc_consuntivo, importo_tot_
     # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
 
-    # CREO UNA TABELLA CON UNA SINGOLA CELLA CONTENTENTE IL VALORE "4"
-    data4 = [
-        ["4"]
-    ]
+    # Add the Altair chart image to the story
+    img = Image(chart_progetti_in_progress_su_pm)
+    story.append(img)
 
-    table_data4 = [[Paragraph(cell, getSampleStyleSheet()["Normal"]) for cell in row] for row in data4]
-    table4 = Table(table_data4, colWidths=500, rowHeights=100)  # AGGIUSTA colWidths E rowHeights IN BASE ALLE NECESSITA'
 
-    table4.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.white),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('SIZE', (0, 0), (-1, -1), 36),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-    ]))
-
-    story.append(table4)
 
     # CREO UNA LINEA DI SPAZIO SOTTO IL TITOLO
     story.append(Spacer(1, 12))
