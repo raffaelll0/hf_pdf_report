@@ -28,7 +28,7 @@ def genera_report_hf():
 
     prev_evasi_mes = data_to_score.n_tot_prev_evasi_mese()
     prev_acc_mes = data_to_score.n_tot_prev_accettati_mese()
-    prev_acc_consuntivo = data_to_score.n_tot_prev_acc_consuntivo()
+    prev_acc_consuntivo = data_to_score.prev_acc_consuntivo()
     prev_acc_anno = data_to_score.n_tot_prev_accettati_anno()
     importo_tot_prev_evasi = data_to_score.importo_tot_prev_evasi()
     importo_tot_prev_accettati = data_to_score.importo_tot_prev_accettati()
