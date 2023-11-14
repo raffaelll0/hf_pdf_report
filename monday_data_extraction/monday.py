@@ -33,6 +33,23 @@ def get_first_and_last_day_of_current_month():
     return first_day_str, last_day_str
 
 
+def first_and_last_day_of_year():
+    # Get the current date
+    current_date = datetime.now()
+
+    # Calculate the first day of the current year
+    first_day = current_date.replace(month=1, day=1)
+
+    # Calculate the last day of the current year
+    last_day = current_date.replace(month=12, day=31)
+
+    # Format dates as "YYYY-MM-DD"
+    first_day_str = first_day.strftime("%Y-%m-%d")
+    last_day_str = last_day.strftime("%Y-%m-%d")
+
+    return first_day_str, last_day_str
+
+
 def get_items(board_ids: list, column_values_ids: list, group_ids: list = None, limit: int = 500,
               query_params_str: str = None, cursor: str = None):
     all_items = []
@@ -77,7 +94,7 @@ def get_items(board_ids: list, column_values_ids: list, group_ids: list = None, 
         # Make a request to the GraphQL endpoint
         r = requests.post(url=apiUrl, json=data, headers=headers)
         response_data = r.json()
-        print(response_data)
+        #print(response_data)
 
         if group_ids is None:
             items = response_data['data']['boards'][0]['items_page']['items']
