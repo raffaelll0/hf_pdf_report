@@ -1,10 +1,9 @@
 import monday
 import altair as alt
 import pandas as pd
+from monday import get_first_and_last_day_of_current_month
 
-
-
-
+get_items = monday.get_items
 apiKey = monday.apiKey
 apiUrl = monday.apiUrl
 headers = monday.headers
@@ -58,7 +57,16 @@ def n_progetti_in_progress_su_pm():
       tooltip=['person','count', 'specchio_1']
       ).interactive()
 
-  return chart
+
+
+  chart_path = r'C:\Users\raffaele.loglisci\Desktop\altair_demo\monday_data_extraction\pngs_of_charts\chart.png'
+
+  chart.save(chart_path)
+
+  return chart_path
+
+
+#n_progetti_in_progress_su_pm()
 
 
 def importo_progetti_progress_anno():
