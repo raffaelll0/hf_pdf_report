@@ -66,7 +66,7 @@ def n_progetti_in_progress_su_pm():
   return chart_path
 
 
-#n_progetti_in_progress_su_pm()
+
 
 
 def importo_progetti_progress_anno():
